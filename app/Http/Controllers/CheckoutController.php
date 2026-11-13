@@ -11,22 +11,18 @@ class CheckoutController extends Controller
 {
     public function store(Request $request, OrderPaymentService $payments): JsonResponse
     {
-        fwrite(STDERR, "CTRL0 entered\n");
         $key = $request->header('Idempotency-Key');
         if (! is_string($key) || ! preg_match('/^[\x21-\x7E]{16,128}$/', $key)) {
             throw new BadRequestHttpException('Header Idempotency-Key wajib diisi (16–128 karakter ASCII yang dapat dicetak).');
         }
 
-        fwrite(STDERR, "CTRL1 key-ok\n");
         $input = $request->validate([
             'product_id' => ['required', 'integer', 'min:1'],
             'player_data' => ['required', 'array', 'max:20'],
             'customer_contact' => ['nullable', 'string', 'regex:/^\\+?[0-9]{8,15}$/'],
         ]);
 
-        fwrite(STDERR, "CTRL2 validated\n");
         $result = $payments->checkout($input, $key);
-        fwrite(STDERR, "CTRL3 service-returned\n");
         $attempt = $result['attempt'];
         $order = $result['order'];
 
