@@ -74,8 +74,11 @@ class CheckoutPaymentTest extends TestCase
 
     public function test_checkout_uses_server_price_and_creates_encrypted_snap_attempt(): void
     {
+        fwrite(STDERR, "CP0 setUp\n");
         $product = $this->createProduct();
+        fwrite(STDERR, "CP1 product\n");
         $this->fakeSnapSuccess();
+        fwrite(STDERR, "CP2 fake\n");
 
         $response = $this->withHeader('Idempotency-Key', str_repeat('a', 32))
             ->postJson('/api/v1/checkout', [
@@ -87,6 +90,7 @@ class CheckoutPaymentTest extends TestCase
                 'amount' => 1,
                 'selling_price' => 1,
             ]);
+        fwrite(STDERR, "CP3 response\n");
 
         $response->assertCreated()
             ->assertJsonPath('data.amount', 15000)
@@ -95,13 +99,18 @@ class CheckoutPaymentTest extends TestCase
             ->assertJsonPath('data.payment.status', 'pending')
             ->assertJsonPath('data.payment.snap_token', 'snap-token-test-123');
 
+        fwrite(STDERR, "CP4 assertions\n");
         $order = Order::firstOrFail();
+        fwrite(STDERR, "CP5 order\n");
         $attempt = PaymentAttempt::firstOrFail();
+        fwrite(STDERR, "CP6 attempt\n");
 
         $this->assertSame(15000, $order->total_amount);
         $this->assertSame(15000, $attempt->amount);
         $this->assertSame('pending', $order->payment_status);
+        fwrite(STDERR, "CP7 before decrypt\n");
         $this->assertSame('snap-token-test-123', $attempt->snap_token);
+        fwrite(STDERR, "CP8 decrypted\n");
         $this->assertNotSame('snap-token-test-123', $attempt->getRawOriginal('snap_token'));
         $this->assertSame(1, PaymentAttempt::count());
         $this->assertSame(1, IdempotencyRecord::count());
