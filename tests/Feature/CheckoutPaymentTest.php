@@ -19,7 +19,6 @@ class CheckoutPaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
 
         config()->set('orders.tracking_token_key', str_repeat('T', 48));
         config()->set('midtrans.server_key', 'SB-Mid-server-test-key');
@@ -75,11 +74,8 @@ class CheckoutPaymentTest extends TestCase
 
     public function test_checkout_uses_server_price_and_creates_encrypted_snap_attempt(): void
     {
-        fwrite(STDERR, "CP0 setUp\n");
         $product = $this->createProduct();
-        fwrite(STDERR, "CP1 product\n");
         $this->fakeSnapSuccess();
-        fwrite(STDERR, "CP2 fake\n");
 
         $response = $this->withHeader('Idempotency-Key', str_repeat('a', 32))
             ->postJson('/api/v1/checkout', [
@@ -91,7 +87,6 @@ class CheckoutPaymentTest extends TestCase
                 'amount' => 1,
                 'selling_price' => 1,
             ]);
-        fwrite(STDERR, "CP3 response\n");
 
         $response->assertCreated()
             ->assertJsonPath('data.amount', 15000)
@@ -100,18 +95,13 @@ class CheckoutPaymentTest extends TestCase
             ->assertJsonPath('data.payment.status', 'pending')
             ->assertJsonPath('data.payment.snap_token', 'snap-token-test-123');
 
-        fwrite(STDERR, "CP4 assertions\n");
         $order = Order::firstOrFail();
-        fwrite(STDERR, "CP5 order\n");
         $attempt = PaymentAttempt::firstOrFail();
-        fwrite(STDERR, "CP6 attempt\n");
 
         $this->assertSame(15000, $order->total_amount);
         $this->assertSame(15000, $attempt->amount);
         $this->assertSame('pending', $order->payment_status);
-        fwrite(STDERR, "CP7 before decrypt\n");
         $this->assertSame('snap-token-test-123', $attempt->snap_token);
-        fwrite(STDERR, "CP8 decrypted\n");
         $this->assertNotSame('snap-token-test-123', $attempt->getRawOriginal('snap_token'));
         $this->assertSame(1, PaymentAttempt::count());
         $this->assertSame(1, IdempotencyRecord::count());
@@ -226,4 +216,48 @@ class CheckoutPaymentTest extends TestCase
             ->assertJsonMissingPath('data.tracking_token_hash')
             ->assertJsonMissingPath('data.payment_attempt.snap_token');
     }
+    public function test_retry_creates_a_new_payment_attempt_only_after_definitive_failure(): void
+    {
+        $product = $this->createProduct();
+        $sequence = Http::sequence()
+            ->push(['error_messages' => ['Request rejected']], 400)
+            ->push([
+                'token' => 'snap-token-retry-456',
+                'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/retry',
+            ], 201);
+
+        Http::fake([
+            'https://app.sandbox.midtrans.com/snap/v1/transactions' => $sequence,
+        ]);
+
+        $initial = $this->withHeader('Idempotency-Key', str_repeat('g', 32))
+            ->postJson('/api/v1/checkout', [
+                'product_id' => $product->id,
+                'player_data' => ['player_id' => '12345678', 'server' => '1234'],
+            ]);
+
+        $initial->assertStatus(502)
+            ->assertJsonPath('data.payment.status', 'failed');
+
+        $trackingToken = $initial->json('data.tracking_token');
+        $this->assertSame(1, PaymentAttempt::count());
+        $this->assertSame('failed', PaymentAttempt::firstOrFail()->status);
+
+        $retry = $this->withHeader('Idempotency-Key', str_repeat('h', 32))
+            ->postJson('/api/v1/orders/'.$trackingToken.'/payment-attempts');
+
+        $retry->assertCreated()
+            ->assertJsonPath('data.payment.status', 'pending')
+            ->assertJsonPath('data.payment.snap_token', 'snap-token-retry-456');
+
+        $attempts = PaymentAttempt::orderBy('attempt_no')->get();
+        $this->assertCount(2, $attempts);
+        $this->assertSame(1, $attempts[0]->attempt_no);
+        $this->assertSame(2, $attempts[1]->attempt_no);
+        $this->assertNotSame($attempts[0]->provider_order_id, $attempts[1]->provider_order_id);
+        $this->assertSame('pending', Order::firstOrFail()->payment_status);
+        Http::assertSentCount(2);
+    }
+
+
 }
