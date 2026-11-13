@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.php diff=php
+*.blade.php diff=html
+*.css diff=css
+*.js diff=javascript
+*.jsx diff=javascript
+*.ts diff=typescript
+*.tsx diff=typescript
