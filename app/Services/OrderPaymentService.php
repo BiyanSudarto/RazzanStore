@@ -44,7 +44,7 @@ class OrderPaymentService
                     ->first();
 
                 if ($existing) {
-                    if (! hash_equals($existing->request_hash, $requestHash)) {
+                    if (!hash_equals($existing->request_hash, $requestHash)) {
                         throw new ConflictHttpException('Idempotency-Key telah digunakan untuk request yang berbeda.');
                     }
 
@@ -60,7 +60,7 @@ class OrderPaymentService
                     ->sharedLock()
                     ->find($canonical['product_id']);
 
-                if (! $product || ! $product->is_active || ! $product->game?->is_active) {
+                if (!$product || !$product->is_active || !$product->game?->is_active) {
                     throw ValidationException::withMessages([
                         'product_id' => 'Produk tidak tersedia.',
                     ]);
@@ -136,11 +136,11 @@ class OrderPaymentService
                 ->where('key_hash', $keyHash)
                 ->first();
 
-            if (! $existing) {
+            if (!$existing) {
                 throw $exception;
             }
 
-            if (! hash_equals($existing->request_hash, $requestHash)) {
+            if (!hash_equals($existing->request_hash, $requestHash)) {
                 throw new ConflictHttpException('Idempotency-Key telah digunakan untuk request yang berbeda.');
             }
 
@@ -178,7 +178,7 @@ class OrderPaymentService
                     ->first();
 
                 if ($existing) {
-                    if (! hash_equals($existing->request_hash, $requestHash)) {
+                    if (!hash_equals($existing->request_hash, $requestHash)) {
                         throw new ConflictHttpException('Idempotency-Key telah digunakan untuk request yang berbeda.');
                     }
 
@@ -215,7 +215,7 @@ class OrderPaymentService
                 }
 
                 $previous = $attempts->last();
-                if (! $previous || ! in_array($previous->status, ['failed', 'expired'], true)) {
+                if (!$previous || !in_array($previous->status, ['failed', 'expired'], true)) {
                     throw new ConflictHttpException('Percobaan ulang hanya tersedia setelah percobaan sebelumnya dipastikan gagal atau kedaluwarsa.');
                 }
 
@@ -252,11 +252,11 @@ class OrderPaymentService
                 ->where('key_hash', $keyHash)
                 ->first();
 
-            if (! $existing) {
+            if (!$existing) {
                 throw $exception;
             }
 
-            if (! hash_equals($existing->request_hash, $requestHash)) {
+            if (!hash_equals($existing->request_hash, $requestHash)) {
                 throw new ConflictHttpException('Idempotency-Key telah digunakan untuk request yang berbeda.');
             }
 
@@ -293,7 +293,7 @@ class OrderPaymentService
             return true;
         }, 3);
 
-        if (! $claimed) {
+        if (!$claimed) {
             return;
         }
 
@@ -334,7 +334,7 @@ class OrderPaymentService
             $token = $response->json('token');
             $redirectUrl = $response->json('redirect_url');
 
-            if (! is_string($token) || $token === '' || ! $this->isSafeMidtransRedirect($redirectUrl)) {
+            if (!is_string($token) || $token === '' || !$this->isSafeMidtransRedirect($redirectUrl)) {
                 $this->markAttemptUnknown($attempt, 'invalid_provider_response');
 
                 return;
@@ -399,7 +399,7 @@ class OrderPaymentService
 
     private function isSafeMidtransRedirect(mixed $url): bool
     {
-        if (! is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+        if (!is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
             return false;
         }
 
