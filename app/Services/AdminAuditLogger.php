@@ -43,6 +43,7 @@ class AdminAuditLogger
             foreach ($sensitive as $needle) {
                 if (str_contains($normalized, $needle)) {
                     unset($data[$key]);
+
                     continue 2;
                 }
             }
