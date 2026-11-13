@@ -13,8 +13,7 @@ class PaymentReconciliationService
     public function __construct(
         private readonly MidtransClient $midtrans,
         private readonly PaymentStateService $states,
-    ) {
-    }
+    ) {}
 
     public function run(int $limit = 100): array
     {
@@ -67,7 +66,7 @@ class PaymentReconciliationService
                 continue;
             }
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $this->markAmbiguous($attempt, $response->status(), 'provider_http_error', null);
                 $summary['errors']++;
                 continue;
