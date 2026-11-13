@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\ReconcilePayments;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireAdminRole;
 use Illuminate\Foundation\Application;
