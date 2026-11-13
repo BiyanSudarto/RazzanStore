@@ -9,7 +9,9 @@
   "dependencies": {
     "@inertiajs/react": "^3.0.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
+    "tailwindcss": "^4.0.0"
   },
   "devDependencies": {
     "@inertiajs/vite": "^3.0.0",
@@ -21,5 +23,8 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "vite-plus": "1.4.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
   }
 }
