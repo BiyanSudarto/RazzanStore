@@ -178,4 +178,57 @@ class CatalogManagementTest extends TestCase
             ->assertJsonMissingPath('data.products.0.base_cost')
             ->assertJsonMissing(['sku' => 'VAL-HIDDEN']);
     }
+    public function test_admin_cannot_read_supplier_cost_or_provider_metadata(): void
+    {
+        $this->actingAs($this->admin('admin'), 'admin');
+        $game = Game::create(['slug' => 'arena-of-valor', 'name' => 'Arena of Valor']);
+        $product = Product::create([
+            'game_id' => $game->id,
+            'sku' => 'AOV-40',
+            'provider_sku' => 'PROVIDER-AOV-40',
+            'name' => '40 Tokens',
+            'base_cost' => 9000,
+            'selling_price' => 11000,
+            'metadata' => ['vendor_reference' => 'internal'],
+        ]);
+
+        $this->getJson('/admin/api/products')
+            ->assertOk()
+            ->assertJsonMissingPath('data.data.0.base_cost')
+            ->assertJsonMissingPath('data.data.0.provider_sku')
+            ->assertJsonMissingPath('data.data.0.metadata');
+
+        $this->getJson('/admin/api/products/'.$product->id)
+            ->assertOk()
+            ->assertJsonMissingPath('data.base_cost')
+            ->assertJsonMissingPath('data.provider_sku')
+            ->assertJsonMissingPath('data.metadata')
+            ->assertJsonMissingPath('data.price_histories');
+
+        $this->getJson('/admin/api/games/'.$game->id)
+            ->assertOk()
+            ->assertJsonMissingPath('data.products.0.base_cost')
+            ->assertJsonMissingPath('data.products.0.provider_sku');
+    }
+
+    public function test_super_admin_can_read_supplier_cost_and_provider_metadata(): void
+    {
+        $this->actingAs($this->admin('super_admin'), 'admin');
+        $game = Game::create(['slug' => 'honor-of-kings', 'name' => 'Honor of Kings']);
+        $product = Product::create([
+            'game_id' => $game->id,
+            'sku' => 'HOK-80',
+            'provider_sku' => 'PROVIDER-HOK-80',
+            'name' => '80 Tokens',
+            'base_cost' => 15000,
+            'selling_price' => 18000,
+            'metadata' => ['vendor_reference' => 'internal'],
+        ]);
+
+        $this->getJson('/admin/api/products/'.$product->id)
+            ->assertOk()
+            ->assertJsonPath('data.base_cost', 15000)
+            ->assertJsonPath('data.provider_sku', 'PROVIDER-HOK-80')
+            ->assertJsonPath('data.metadata.vendor_reference', 'internal');
+    }
 }
