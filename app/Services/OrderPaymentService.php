@@ -38,6 +38,12 @@ class OrderPaymentService
 
         try {
             $result = DB::transaction(function () use ($canonical, $scope, $keyHash, $requestHash): array {
+                IdempotencyRecord::query()
+                    ->where('scope', $scope)
+                    ->where('key_hash', $keyHash)
+                    ->where('expires_at', '<=', now())
+                    ->delete();
+
                 $existing = IdempotencyRecord::query()
                     ->where('scope', $scope)
                     ->where('key_hash', $keyHash)
@@ -172,6 +178,12 @@ class OrderPaymentService
 
         try {
             $result = DB::transaction(function () use ($tokenHash, $scope, $keyHash, $requestHash): array {
+                IdempotencyRecord::query()
+                    ->where('scope', $scope)
+                    ->where('key_hash', $keyHash)
+                    ->where('expires_at', '<=', now())
+                    ->delete();
+
                 $existing = IdempotencyRecord::query()
                     ->where('scope', $scope)
                     ->where('key_hash', $keyHash)
