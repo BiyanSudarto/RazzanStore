@@ -9,14 +9,16 @@ Platform top-up game otomatis untuk pelanggan Indonesia.
 - Tailwind CSS 4 + Vite Plus
 - MySQL 8.x
 - Redis untuk queue/cache
-- Midtrans Snap dan Digiflazz (integrasi akan dikerjakan pada fase terpisah)
+- Midtrans Snap (backend adapter dan webhook pada Phase 2)
+- Digiflazz API/Buyer Webhook (ditunda ke Phase 3)
 
 ## Status
 
 - Master Spec V2.0 disetujui.
 - Phase 0 foundation CI lulus.
-- Phase 1 database/admin/catalog dikerjakan pada branch feat/phase-1-admin-catalog.
-- Pembayaran/fulfillment belum diaktifkan.
+- Phase 1 database/admin/catalog dikerjakan pada branch `feat/phase-1-admin-catalog`.
+- Phase 2 order/checkout/Midtrans dikerjakan pada branch `feat/phase-2-checkout-midtrans`; PR #3 masih Draft dan belum di-merge.
+- Phase 2 belum memakai live credentials dan belum menjalankan fulfillment; Digiflazz ditunda ke Phase 3.
 - Tidak ada VPS/domain berbayar yang dibeli atau deployment dilakukan.
 
 ## Setup lokal
@@ -49,4 +51,4 @@ Perintah admin bootstrap meminta nama, email, password secara interaktif; gunaka
 - Checkout, payment event, dan fulfillment harus idempotent.
 - Transaksi production tidak diaktifkan sebelum production gates lulus.
 
-Lihat docs/spec-anchor/phase-1-database-admin-catalog.md untuk ERD, role matrix, endpoint, dan setup Phase 1.
+Lihat `docs/spec-anchor/phase-1-database-admin-catalog.md` untuk ERD, role matrix, endpoint, dan setup Phase 1. Lihat `docs/spec-anchor/phase-2-orders-payments-midtrans.md` untuk skema order/payment, API checkout, Midtrans webhook, rekonsiliasi, dan batasan Phase 2.

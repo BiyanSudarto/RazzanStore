@@ -8,8 +8,20 @@ use App\Http\Controllers\Admin\GameFieldController;
 use App\Http\Controllers\Admin\ProductController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::view('/', 'welcome')->name('home');
+Route::get('/', fn () => Inertia::render('Welcome', [
+    'midtransClientKey' => config('midtrans.client_key'),
+    'midtransIsProduction' => config('midtrans.is_production'),
+]))->name('home');
+
+Route::get('/track/{trackingToken}', fn (string $trackingToken) => Inertia::render('orders/Tracking', [
+    'trackingToken' => $trackingToken,
+    'midtransClientKey' => config('midtrans.client_key'),
+    'midtransIsProduction' => config('midtrans.is_production'),
+]))->where('trackingToken', '[A-Za-z0-9_-]{40,50}')
+    ->middleware('throttle:60,1')
+    ->name('orders.track');
 
 Route::get('/admin/login', function () {
     if (Auth::guard('admin')->check()) {
