@@ -8,6 +8,7 @@ use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Str;
@@ -322,10 +323,20 @@ class OrderPaymentService
             ];
         }
 
+        if ((string) config('midtrans.server_key') === '') {
+            $this->markAttemptFailed($attempt, 'server_key_not_configured');
+
+            return;
+        }
+
         try {
             $response = $this->midtrans->createSnapTransaction($payload);
+        } catch (ConnectionException) {
+            $this->markAttemptUnknown($attempt, 'connection_error');
+
+            return;
         } catch (\Throwable) {
-            $this->markAttemptUnknown($attempt, 'connection_or_configuration_error');
+            $this->markAttemptUnknown($attempt, 'provider_client_error');
 
             return;
         }
@@ -392,6 +403,23 @@ class OrderPaymentService
             $locked->update([
                 'status' => 'unknown',
                 'provider_metadata' => ['reason' => $reason],
+            ]);
+            $this->syncOrderAggregate($locked->order_id);
+        }, 3);
+    }
+
+    private function markAttemptFailed(PaymentAttempt $attempt, string $reason): void
+    {
+        DB::transaction(function () use ($attempt, $reason): void {
+            $locked = PaymentAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
+            if ($locked->status !== 'creating') {
+                return;
+            }
+
+            $locked->update([
+                'status' => 'failed',
+                'provider_metadata' => ['reason' => $reason],
+                'confirmed_at' => now(),
             ]);
             $this->syncOrderAggregate($locked->order_id);
         }, 3);
