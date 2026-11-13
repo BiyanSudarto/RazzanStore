@@ -19,6 +19,7 @@ class CheckoutPaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
 
         config()->set('orders.tracking_token_key', str_repeat('T', 48));
         config()->set('midtrans.server_key', 'SB-Mid-server-test-key');
