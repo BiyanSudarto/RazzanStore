@@ -43,6 +43,18 @@ class AdminAuthenticationTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('admin/Dashboard'));
     }
 
+    public function test_authenticated_admin_can_open_catalog_management_page(): void
+    {
+        $admin = $this->createAdmin('admin');
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/catalog')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/Catalog')
+                ->where('adminRole', 'admin'));
+    }
+
     public function test_guest_is_redirected_to_admin_login(): void
     {
         $this->get('/admin')->assertRedirect(route('admin.login'));
