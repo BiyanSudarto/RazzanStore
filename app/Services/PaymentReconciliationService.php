@@ -101,7 +101,7 @@ class PaymentReconciliationService
             if (str_starts_with($outcome, 'rejected')) {
                 $summary['rejected']++;
             } elseif ($outcome === 'processed') {
-                $summary['paid_or_updated']++;
+                $summary['processed']++;
             } else {
                 $summary['still_ambiguous']++;
             }
@@ -135,8 +135,33 @@ class PaymentReconciliationService
                 'checked_at' => now(),
             ]);
 
-            if ($locked->status !== 'paid') {
-                $locked->order()->update(['payment_status' => 'unknown']);
+            $order = Order::query()->lockForUpdate()->findOrFail($locked->order_id);
+            $hasPaidAttempt = PaymentAttempt::query()
+                ->where('order_id', $order->id)
+                ->where('status', 'paid')
+                ->exists();
+
+            if ($hasPaidAttempt || $order->payment_status === 'paid') {
+                $order->update([
+                    'status' => 'paid',
+                    'payment_status' => 'paid',
+                    'paid_at' => $order->paid_at ?? now(),
+                ]);
+
+                OutboxEvent::firstOrCreate(
+                    ['order_id' => $order->id, 'event_type' => 'order.paid'],
+                    [
+                        'event_uuid' => (string) Str::uuid(),
+                        'payload' => [
+                            'order_id' => $order->id,
+                            'public_order_code' => $order->public_order_code,
+                        ],
+                        'status' => 'pending',
+                        'available_at' => now(),
+                    ],
+                );
+            } elseif ($locked->status !== 'paid') {
+                $order->update(['payment_status' => 'unknown']);
             }
         }, 3);
     }
