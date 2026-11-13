@@ -101,6 +101,11 @@ class CatalogManagementTest extends TestCase
             'selling_price' => 13000,
         ])->assertForbidden();
 
+        $this->patchJson('/admin/api/products/'.$product->id, [
+            'provider_sku' => 'PROVIDER-CHANGED',
+            'metadata' => ['secret_mapping' => 'blocked'],
+        ])->assertForbidden();
+
         $this->assertDatabaseCount('price_histories', 0);
     }
 
