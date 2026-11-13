@@ -96,6 +96,7 @@ export default function AdminCatalog({ adminRole }: Props) {
     const [productForm, setProductForm] = useState({
         game_id: '',
         sku: '',
+        provider_sku: '',
         name: '',
         base_cost: '',
         selling_price: '',
@@ -351,7 +352,7 @@ export default function AdminCatalog({ adminRole }: Props) {
                                             selling_price: Number(productForm.selling_price),
                                             game_id: Number(productForm.game_id),
                                             is_active: true,
-                                        }, 'Produk berhasil ditambahkan.', () => setProductForm({ game_id: selectedGame, sku: '', name: '', base_cost: '', selling_price: '', nominal_label: '' }))}
+                                        }, 'Produk berhasil ditambahkan.', () => setProductForm({ game_id: selectedGame, sku: '', provider_sku: '', name: '', base_cost: '', selling_price: '', nominal_label: '' }))}
                                     >
                                         <div className="sm:col-span-2">
                                             <label className={labelClass} htmlFor="product-game">Game</label>
@@ -363,6 +364,10 @@ export default function AdminCatalog({ adminRole }: Props) {
                                         <div>
                                             <label className={labelClass} htmlFor="product-sku">SKU internal</label>
                                             <input id="product-sku" className={inputClass} value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })} required />
+                                        </div>
+                                        <div>
+                                            <label className={labelClass} htmlFor="provider-sku">SKU provider</label>
+                                            <input id="provider-sku" className={inputClass} value={productForm.provider_sku} onChange={(e) => setProductForm({ ...productForm, provider_sku: e.target.value })} maxLength={120} />
                                         </div>
                                         <div>
                                             <label className={labelClass} htmlFor="product-name">Nama produk</label>
