@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\Game;
 use App\Models\Order;
 use App\Models\OutboxEvent;
-use App\\Models\\PaymentAttempt;
-use App\\Models\\PaymentWebhookEvent;
+use App\Models\PaymentAttempt;
+use App\Models\PaymentWebhookEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
