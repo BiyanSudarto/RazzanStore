@@ -231,7 +231,11 @@ class PaymentStateService
         $statusCode = (string) ($payload['status_code'] ?? '');
         $fraudStatus = strtolower((string) ($payload['fraud_status'] ?? ''));
 
-        if (in_array($status, ['settlement', 'capture'], true)) {
+        if ($status === 'settlement') {
+            return $statusCode === '200' ? 'paid' : 'reconciliation_required';
+        }
+
+        if ($status === 'capture') {
             return $statusCode === '200' && $fraudStatus === 'accept'
                 ? 'paid'
                 : 'reconciliation_required';
