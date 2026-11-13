@@ -178,6 +178,7 @@ class CatalogManagementTest extends TestCase
             ->assertJsonMissingPath('data.products.0.base_cost')
             ->assertJsonMissing(['sku' => 'VAL-HIDDEN']);
     }
+
     public function test_admin_cannot_read_supplier_cost_or_provider_metadata(): void
     {
         $this->actingAs($this->admin('admin'), 'admin');
