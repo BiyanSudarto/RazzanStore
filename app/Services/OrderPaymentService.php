@@ -25,7 +25,6 @@ class OrderPaymentService
 
     public function checkout(array $input, string $idempotencyKey): array
     {
-        fwrite(STDERR, "SVC0 checkout\n");
         $playerData = $input['player_data'] ?? [];
         ksort($playerData);
         $canonical = [
@@ -40,7 +39,6 @@ class OrderPaymentService
 
         try {
             $result = DB::transaction(function () use ($canonical, $scope, $keyHash, $requestHash): array {
-                fwrite(STDERR, "SVC1 transaction\n");
                 $existing = IdempotencyRecord::query()
                     ->where('scope', $scope)
                     ->where('key_hash', $keyHash)
@@ -58,7 +56,6 @@ class OrderPaymentService
                     ];
                 }
 
-                fwrite(STDERR, "SVC2 idempotency\n");
                 $product = Product::query()
                     ->with(['game.fields'])
                     ->sharedLock()
@@ -70,13 +67,11 @@ class OrderPaymentService
                     ]);
                 }
 
-                fwrite(STDERR, "SVC3 product\n");
                 $validatedPlayerData = $this->playerDataValidator->validate(
                     $product->game,
                     $canonical['player_data'],
                 );
 
-                fwrite(STDERR, "SVC4 validated\n");
                 $price = (int) $product->selling_price;
                 if ($price < 1) {
                     throw ValidationException::withMessages([
@@ -110,7 +105,6 @@ class OrderPaymentService
                     'expires_at' => now()->addMinutes((int) config('orders.business_expiry_minutes', 60)),
                 ]);
 
-                fwrite(STDERR, "SVC5 order\n");
                 $attempt = $order->paymentAttempts()->create([
                     'attempt_no' => 1,
                     'provider' => 'midtrans',
@@ -121,7 +115,6 @@ class OrderPaymentService
                     'requested_at' => now(),
                 ]);
 
-                fwrite(STDERR, "SVC6 attempt\n");
                 IdempotencyRecord::create([
                     'scope' => $scope,
                     'key_hash' => $keyHash,
@@ -138,7 +131,6 @@ class OrderPaymentService
                     'replayed' => false,
                 ];
             }, 3);
-            fwrite(STDERR, "SVC7 transaction-complete\n");
         } catch (QueryException $exception) {
             $existing = IdempotencyRecord::query()
                 ->where('scope', $scope)
@@ -161,12 +153,10 @@ class OrderPaymentService
         }
 
         $attempt = $result['attempt'];
-        fwrite(STDERR, "SVC8 before-snap\n");
         if ($attempt && $attempt->status === 'creating') {
             $this->createSnapIfClaimed($attempt);
         }
 
-        fwrite(STDERR, "SVC9 after-snap\n");
         $result['order']->refresh();
         $result['attempt']?->refresh();
         $result['tracking_token'] = $this->trackingTokens->issueFor($result['order']);
@@ -304,7 +294,6 @@ class OrderPaymentService
             return true;
         }, 3);
 
-        fwrite(STDERR, "SVC10 claim\n");
         if (! $claimed) {
             return;
         }
@@ -341,9 +330,7 @@ class OrderPaymentService
         }
 
         try {
-            fwrite(STDERR, "SVC11 request\n");
             $response = $this->midtrans->createSnapTransaction($payload);
-            fwrite(STDERR, "SVC12 response\n");
         } catch (ConnectionException) {
             $this->markAttemptUnknown($attempt, 'connection_error');
 
