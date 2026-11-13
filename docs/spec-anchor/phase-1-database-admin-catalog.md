@@ -34,7 +34,7 @@ All operational tables use InnoDB-compatible foreign keys and indexes. Transacti
 - admin.role middleware enforces active status and role allowlists.
 - Game and game-field catalog management is available to both administrator roles.
 - Product creation and price changes are restricted to Super Admin. Admin can update non-price product metadata and deactivate products.
-- Administrator mutations are written to audit logs; password/token/secret-like keys are redacted.
+- Administrator mutations are written to audit logs; password/token/secret-like keys are redacted. Price history and supplier cost/provider metadata are available only to Super Admin. Admin responses hide base cost, provider SKU, and internal metadata.
 
 ## Catalog interfaces
 
@@ -52,6 +52,11 @@ Administrator routes are session-authenticated web routes under /admin/api and r
 - POST /admin/api/products/{product}/deactivate
 - Super Admin only: POST /admin/api/products
 - Super Admin only: PATCH /admin/api/products/{product}/price
+
+Admin UI:
+- GET /admin/catalog renders the responsive catalog management screen.
+- The screen supports game creation, dynamic Player ID/server fields, product listing, product creation for Super Admin, Super Admin-only price changes, and product deactivation.
+- Product listing/show hides supplier cost/provider metadata for Admin; the API applies the same restriction, not merely the UI.
 
 Public catalog never exposes base cost, provider SKU, or internal metadata.
 
@@ -88,6 +93,8 @@ No default Super Admin credential is seeded. Do not use production credentials i
 - Admin cannot create products or alter price.
 - Super Admin price change produces a price-history row and audit event.
 - Public catalog returns active products only and hides internal base cost.
+- Admin product list/show/game detail hide base cost, provider SKU, internal metadata, and price history; Super Admin can access them.
+- Authenticated admin can open /admin/catalog; form actions call the session-authenticated CSRF-protected web endpoints.
 - CI runs Composer install, Pint, PHPUnit, npm install and frontend build.
 
 ## Deferred to later phases
