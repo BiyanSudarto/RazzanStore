@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@source "../views/**/*.blade.php";
+@source "../js/**/*.tsx";
+@source "../js/**/*.ts";
+
+:root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    background: #0b0c0f;
+    color: #f5f5f4;
+}
