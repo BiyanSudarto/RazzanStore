@@ -28,10 +28,8 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env
       - run: php artisan key:generate
-      - run: composer lint:fix && git diff --color=never
       - run: composer lint
       - run: composer test
-
 
   mysql-migrations:
     name: MySQL 8.4 schema migration
