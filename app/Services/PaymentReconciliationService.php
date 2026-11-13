@@ -67,14 +67,14 @@ class PaymentReconciliationService
                 continue;
             }
 
-            if (! $response->successful()) {
+            if (!$response->successful()) {
                 $this->markAmbiguous($attempt, $response->status(), 'provider_http_error', null);
                 $summary['errors']++;
                 continue;
             }
 
             $payload = $response->json();
-            if (! is_array($payload)) {
+            if (!is_array($payload)) {
                 $this->markAmbiguous($attempt, $response->status(), 'invalid_provider_payload', null);
                 $summary['errors']++;
                 continue;
