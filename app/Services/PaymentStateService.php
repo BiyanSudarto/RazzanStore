@@ -52,7 +52,7 @@ class PaymentStateService
                     'received_at' => now(),
                 ]);
 
-                if (! $attempt) {
+                if (!$attempt) {
                     $event->update([
                         'processing_status' => 'unmatched',
                         'processed_at' => now(),
