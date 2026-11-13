@@ -87,6 +87,10 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product, AdminAuditLogger $audit): JsonResponse
     {
+        if (! auth('admin')->user()?->hasRole('super_admin') && $request->hasAny(['provider_sku', 'metadata'])) {
+            abort(403, 'Hanya Super Admin yang dapat mengubah mapping provider dan metadata internal.');
+        }
+
         $data = $request->validate([
             'sku' => ['sometimes', 'required', 'string', 'max:100', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('products', 'sku')->ignore($product->id)],
             'provider_sku' => ['sometimes', 'nullable', 'string', 'max:120'],
