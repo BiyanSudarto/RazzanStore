@@ -3,7 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Game;
-use App\Models\GameField;
+use App\\Models\\GameField;
+use App\\Models\\IdempotencyRecord;
 use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
@@ -103,7 +104,7 @@ class CheckoutPaymentTest extends TestCase
         $this->assertSame('snap-token-test-123', $attempt->snap_token);
         $this->assertNotSame('snap-token-test-123', $attempt->getRawOriginal('snap_token'));
         $this->assertSame(1, PaymentAttempt::count());
-        $this->assertSame(1, \App\Models\IdempotencyRecord::count());
+        $this->assertSame(1, IdempotencyRecord::count());
         Http::assertSentCount(1);
     }
 
