@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class RequireAdminRole
@@ -12,8 +13,17 @@ class RequireAdminRole
     {
         $admin = $request->user('admin');
 
-        if (! $admin || ! $admin->is_active) {
-            abort(403, 'Akses administrator tidak diizinkan.');
+        if (! $admin) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            return redirect()->guest(route('admin.login'));
+        }
+
+        if (! $admin->is_active) {
+            Auth::guard('admin')->logout();
+            abort(403, 'Akun administrator tidak aktif.');
         }
 
         if ($roles !== [] && ! $admin->role()->whereIn('code', $roles)->exists()) {
