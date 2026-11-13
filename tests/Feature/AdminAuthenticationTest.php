@@ -27,6 +27,14 @@ class AdminAuthenticationTest extends TestCase
         ]);
     }
 
+    public function test_admin_passwords_are_hashed_with_argon2id(): void
+    {
+        $admin = $this->createAdmin();
+
+        $this->assertSame('argon2id', Hash::info($admin->password)['algoName']);
+        $this->assertTrue(Hash::check('StrongTestPassword123!', $admin->password));
+    }
+
     public function test_admin_can_login_and_access_dashboard(): void
     {
         $admin = $this->createAdmin();
