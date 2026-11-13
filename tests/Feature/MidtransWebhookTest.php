@@ -165,4 +165,20 @@ class MidtransWebhookTest extends TestCase
         $this->assertSame('unknown', $attempt->order->fresh()->payment_status);
         $this->assertSame(0, OutboxEvent::count());
     }
+    public function test_settlement_is_paid_when_midtrans_omits_fraud_status(): void
+    {
+        $attempt = $this->makeAttempt();
+        $payload = $this->payload('settlement');
+        unset($payload['fraud_status']);
+
+        $this->postJson('/api/v1/webhooks/midtrans', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 'processed');
+
+        $this->assertSame('paid', $attempt->fresh()->status);
+        $this->assertSame('paid', $attempt->order->fresh()->payment_status);
+        $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
+    }
+
+
 }
