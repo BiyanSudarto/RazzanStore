@@ -56,29 +56,34 @@ class PaymentReconciliationService
             } catch (ConnectionException) {
                 $this->markAmbiguous($attempt, null, 'network_error', null);
                 $summary['errors']++;
+
                 continue;
             } catch (Throwable) {
                 $this->markAmbiguous($attempt, null, 'client_error', null);
                 $summary['errors']++;
+
                 continue;
             }
 
             if ($response->status() === 404) {
                 $this->markAmbiguous($attempt, 404, 'not_found_ambiguous', null);
                 $summary['still_ambiguous']++;
+
                 continue;
             }
 
             if (! $response->successful()) {
                 $this->markAmbiguous($attempt, $response->status(), 'provider_http_error', null);
                 $summary['errors']++;
+
                 continue;
             }
 
             $payload = $response->json();
-            if (!is_array($payload)) {
+            if (! is_array($payload)) {
                 $this->markAmbiguous($attempt, $response->status(), 'invalid_provider_payload', null);
                 $summary['errors']++;
+
                 continue;
             }
 
