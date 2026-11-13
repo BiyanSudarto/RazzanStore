@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
+use App\Models\PaymentReconciliationLog;
 use App\Models\PaymentWebhookEvent;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -125,7 +126,11 @@ class PaymentStateService
 
             if ($otherAttempt || ($attempt->provider_transaction_id !== null
                 && $attempt->provider_transaction_id !== $transactionId)) {
-                $attempt->update(['status' => 'reconciliation_required']);
+                if ($attempt->status !== 'paid') {
+                    $attempt->update(['status' => 'reconciliation_required']);
+                }
+
+                $this->preservePaidAggregate($order);
 
                 return 'conflict';
             }
@@ -184,6 +189,25 @@ class PaymentStateService
                 ],
             );
 
+            if ($paidAttempts->count() > 1) {
+                PaymentReconciliationLog::firstOrCreate(
+                    [
+                        'payment_attempt_id' => $attempt->id,
+                        'source' => 'multiple_paid_attempts',
+                        'outcome' => 'multiple_paid_conflict',
+                    ],
+                    [
+                        'provider_status' => 'multiple_paid',
+                        'safe_metadata' => [
+                            'paid_attempt_ids' => $paidAttempts->pluck('id')->values()->all(),
+                        ],
+                        'checked_at' => now(),
+                    ],
+                );
+
+                return 'conflict';
+            }
+
             return 'processed';
         }
 
@@ -223,6 +247,40 @@ class PaymentStateService
         }
 
         return 'processed';
+    }
+
+
+    private function preservePaidAggregate(Order $order): void
+    {
+        $hasPaidAttempt = PaymentAttempt::query()
+            ->where('order_id', $order->id)
+            ->where('status', 'paid')
+            ->exists();
+
+        if (! $hasPaidAttempt && $order->payment_status !== 'paid') {
+            $order->update(['payment_status' => 'unknown']);
+
+            return;
+        }
+
+        $order->update([
+            'status' => 'paid',
+            'payment_status' => 'paid',
+            'paid_at' => $order->paid_at ?? now(),
+        ]);
+
+        OutboxEvent::firstOrCreate(
+            ['order_id' => $order->id, 'event_type' => 'order.paid'],
+            [
+                'event_uuid' => (string) Str::uuid(),
+                'payload' => [
+                    'order_id' => $order->id,
+                    'public_order_code' => $order->public_order_code,
+                ],
+                'status' => 'pending',
+                'available_at' => now(),
+            ],
+        );
     }
 
     private function mapProviderStatus(array $payload): string
