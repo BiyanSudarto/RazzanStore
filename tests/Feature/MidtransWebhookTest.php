@@ -6,6 +6,7 @@ use App\Models\Game;
 use App\Models\Order;
 use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
+use App\Models\PaymentReconciliationLog;
 use App\Models\PaymentWebhookEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -165,6 +166,7 @@ class MidtransWebhookTest extends TestCase
         $this->assertSame('unknown', $attempt->order->fresh()->payment_status);
         $this->assertSame(0, OutboxEvent::count());
     }
+
     public function test_settlement_is_paid_when_midtrans_omits_fraud_status(): void
     {
         $attempt = $this->makeAttempt();
@@ -180,5 +182,69 @@ class MidtransWebhookTest extends TestCase
         $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
     }
 
+
+    public function test_second_successful_attempt_is_flagged_without_duplicate_outbox(): void
+    {
+        $first = $this->makeAttempt();
+        $second = $first->order->paymentAttempts()->create([
+            'attempt_no' => 2,
+            'provider' => 'midtrans',
+            'provider_order_id' => 'RS-TESTORDER001-P2',
+            'status' => 'pending',
+            'amount' => 12000,
+            'currency' => 'IDR',
+            'requested_at' => now(),
+        ]);
+
+        $first->update([
+            'status' => 'paid',
+            'provider_transaction_id' => 'midtrans-txn-001',
+            'confirmed_at' => now(),
+        ]);
+        $first->order->update([
+            'status' => 'paid',
+            'payment_status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $payload = $this->payload('settlement');
+        $payload['order_id'] = $second->provider_order_id;
+        $payload['transaction_id'] = 'midtrans-txn-002';
+        $payload['signature_key'] = hash(
+            'sha512',
+            $payload['order_id'].$payload['status_code'].$payload['gross_amount'].self::SERVER_KEY,
+        );
+
+        $this->postJson('/api/v1/webhooks/midtrans', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 'conflict');
+
+        $this->assertSame('paid', $first->fresh()->status);
+        $this->assertSame('paid', $second->fresh()->status);
+        $this->assertSame('paid', $first->order->fresh()->payment_status);
+        $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
+        $this->assertDatabaseHas('payment_reconciliation_logs', [
+            'payment_attempt_id' => $second->id,
+            'source' => 'multiple_paid_attempts',
+            'outcome' => 'multiple_paid_conflict',
+        ]);
+        $this->assertDatabaseHas('payment_webhook_events', [
+            'provider_order_id' => $second->provider_order_id,
+            'processing_status' => 'conflict',
+        ]);
+    }
+
+    public function test_capture_with_accept_fraud_status_is_paid(): void
+    {
+        $attempt = $this->makeAttempt();
+
+        $this->postJson('/api/v1/webhooks/midtrans', $this->payload('capture', '200', '12000.00', 'accept'))
+            ->assertOk()
+            ->assertJsonPath('status', 'processed');
+
+        $this->assertSame('paid', $attempt->fresh()->status);
+        $this->assertSame('paid', $attempt->order->fresh()->payment_status);
+        $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
+    }
 
 }
