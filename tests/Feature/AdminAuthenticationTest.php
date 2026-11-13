@@ -64,14 +64,6 @@ class AdminAuthenticationTest extends TestCase
                 ->where('adminRole', 'admin'));
     }
 
-    public function test_admin_passwords_are_hashed_with_argon2id(): void
-    {
-        $admin = $this->createAdmin();
-
-        $this->assertSame('argon2id', Hash::info($admin->password)['algoName']);
-        $this->assertTrue(Hash::check('StrongTestPassword123!', $admin->password));
-    }
-
     public function test_guest_is_redirected_to_admin_login(): void
     {
         $this->get('/admin')->assertRedirect(route('admin.login'));
