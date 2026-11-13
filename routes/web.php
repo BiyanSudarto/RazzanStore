@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
+Route::get('/track/{trackingToken}', fn (string $trackingToken) => Inertia::render('orders/Tracking', [
+    'trackingToken' => $trackingToken,
+]))->where('trackingToken', '[A-Za-z0-9_-]{40,50}')
+    ->middleware('throttle:60,1')
+    ->name('orders.track');
+
 Route::get('/admin/login', function () {
     if (Auth::guard('admin')->check()) {
         return redirect()->route('admin.dashboard');
