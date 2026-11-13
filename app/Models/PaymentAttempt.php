@@ -38,6 +38,7 @@ class PaymentAttempt extends Model
             'snap_token' => 'encrypted',
             'provider_metadata' => 'array',
             'requested_at' => 'datetime',
+            'provider_request_started_at' => 'datetime',
             'confirmed_at' => 'datetime',
             'expires_at' => 'datetime',
             'last_reconciled_at' => 'datetime',
