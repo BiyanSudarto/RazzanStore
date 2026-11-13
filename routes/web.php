@@ -24,6 +24,7 @@ Route::post('/admin/login', [AuthController::class, 'store'])
 
 Route::middleware('admin.role:super_admin,admin')->group(function (): void {
     Route::get('/admin', DashboardController::class)->name('admin.dashboard');
+    Route::get('/admin/catalog', CatalogPageController::class)->name('admin.catalog');
     Route::post('/admin/logout', [AuthController::class, 'destroy'])->name('admin.logout');
 
     Route::prefix('admin/api')->name('admin.api.')->group(function (): void {
