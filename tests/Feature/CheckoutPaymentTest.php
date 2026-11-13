@@ -299,5 +299,4 @@ class CheckoutPaymentTest extends TestCase
         $this->assertSame(1, IdempotencyRecord::count());
         Http::assertSentCount(2);
     }
-
 }
