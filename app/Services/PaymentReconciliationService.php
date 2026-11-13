@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Order;
+use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentReconciliationLog;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class PaymentReconciliationService
@@ -35,7 +38,7 @@ class PaymentReconciliationService
 
         $summary = [
             'checked' => 0,
-            'paid_or_updated' => 0,
+            'processed' => 0,
             'still_ambiguous' => 0,
             'rejected' => 0,
             'errors' => 0,
