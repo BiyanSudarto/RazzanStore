@@ -45,11 +45,31 @@ class PaymentReconciliationService
         ];
 
         foreach ($attempts as $attempt) {
-            $summary['checked']++;
+            $eligible = DB::transaction(function () use ($attempt): bool {
+                $locked = PaymentAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
 
-            if ($attempt->status === 'creating') {
-                $attempt->update(['status' => 'unknown']);
+                if ($locked->status === 'creating') {
+                    $startedAt = $locked->provider_request_started_at;
+                    if ($startedAt === null || $startedAt->gt(now()->subMinutes(2))) {
+                        return false;
+                    }
+
+                    $locked->update(['status' => 'unknown']);
+                }
+
+                return in_array(
+                    $locked->status,
+                    ['pending', 'unknown', 'reconciliation_required'],
+                    true,
+                );
+            }, 3);
+
+            if (! $eligible) {
+                continue;
             }
+
+            $attempt->refresh();
+            $summary['checked']++;
 
             try {
                 $response = $this->midtrans->getStatus($attempt->provider_order_id);
