@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\Game;
 use App\Models\Product;
-use App\Models\Admin;
 use Inertia\Inertia;
 use Inertia\Response;
 
