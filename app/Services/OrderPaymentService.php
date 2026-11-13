@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\IdempotencyRecord;
 use App\Models\Order;
+use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -352,7 +354,7 @@ class OrderPaymentService
                     'provider_metadata' => ['http_status' => $response->status()],
                 ]);
 
-                $locked->order()->update(['payment_status' => 'pending']);
+                $this->syncOrderAggregate($locked->order_id);
             }, 3);
 
             return;
@@ -375,7 +377,7 @@ class OrderPaymentService
                 'status' => 'failed',
                 'provider_metadata' => ['http_status' => $status],
             ]);
-            $locked->order()->update(['payment_status' => 'failed', 'status' => 'failed']);
+            $this->syncOrderAggregate($locked->order_id);
         }, 3);
     }
 
@@ -391,8 +393,73 @@ class OrderPaymentService
                 'status' => 'unknown',
                 'provider_metadata' => ['reason' => $reason],
             ]);
-            $locked->order()->update(['payment_status' => 'unknown']);
+            $this->syncOrderAggregate($locked->order_id);
         }, 3);
+    }
+
+    private function syncOrderAggregate(int $orderId): void
+    {
+        $order = Order::query()->lockForUpdate()->findOrFail($orderId);
+        $attempts = PaymentAttempt::query()
+            ->where('order_id', $orderId)
+            ->lockForUpdate()
+            ->get();
+
+        if ($attempts->contains(fn (PaymentAttempt $row) => $row->status === 'paid')) {
+            $order->update([
+                'status' => 'paid',
+                'payment_status' => 'paid',
+                'paid_at' => $order->paid_at ?? now(),
+            ]);
+
+            OutboxEvent::firstOrCreate(
+                ['order_id' => $order->id, 'event_type' => 'order.paid'],
+                [
+                    'event_uuid' => (string) Str::uuid(),
+                    'payload' => [
+                        'order_id' => $order->id,
+                        'public_order_code' => $order->public_order_code,
+                    ],
+                    'status' => 'pending',
+                    'available_at' => now(),
+                ],
+            );
+
+            return;
+        }
+
+        if ($order->payment_status === 'paid') {
+            return;
+        }
+
+        $activeStatuses = ['creating', 'pending', 'unknown', 'reconciliation_required'];
+        if ($attempts->contains(fn (PaymentAttempt $row) => in_array($row->status, $activeStatuses, true))) {
+            $unknown = $attempts->contains(fn (PaymentAttempt $row) => in_array(
+                $row->status,
+                ['unknown', 'reconciliation_required'],
+                true,
+            ));
+
+            $order->update([
+                'status' => 'pending_payment',
+                'payment_status' => $unknown ? 'unknown' : 'pending',
+            ]);
+
+            return;
+        }
+
+        if ($attempts->isNotEmpty() && $attempts->every(fn (PaymentAttempt $row) => in_array(
+            $row->status,
+            ['failed', 'expired'],
+            true,
+        ))) {
+            $allExpired = $attempts->every(fn (PaymentAttempt $row) => $row->status === 'expired');
+
+            $order->update([
+                'status' => 'failed',
+                'payment_status' => $allExpired ? 'expired' : 'failed',
+            ]);
+        }
     }
 
     private function isSafeMidtransRedirect(mixed $url): bool
