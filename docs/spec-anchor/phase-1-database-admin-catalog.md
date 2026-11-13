@@ -29,8 +29,8 @@ All operational tables use InnoDB-compatible foreign keys and indexes. Transacti
 - Dedicated Laravel session guard admin and Eloquent provider admins; separate from the default web user guard.
 - Admin login uses session regeneration and route throttling (5 requests/minute) plus a per-email/IP failure counter.
 - Inactive administrators cannot authenticate.
-- Passwords are hashed by Laravel's hashed cast; CLI bootstrap enforces 12–128 characters and never writes a default credential to source control.
-- razzanstore:admin:create interactively creates the first Super Admin after migrations.
+- Passwords are hashed with Argon2id (64 MiB memory, time cost 4, one thread) through Laravel's hashed cast; CLI bootstrap enforces 12–128 characters and never writes a default credential to source control. Production PHP must expose Argon2id in password_algos().
+- razzanstore:admin:create --role=super_admin interactively creates a Super Admin; use --role=admin to create an Admin. Passwords are never printed or seeded.
 - admin.role middleware enforces active status and role allowlists.
 - Game and game-field catalog management is available to both administrator roles.
 - Product creation, price changes, provider SKU mapping, and internal product metadata are restricted to Super Admin. Admin can update customer-facing product fields and deactivate products.
@@ -78,7 +78,7 @@ Field key is restricted to lowercase identifiers. Input types are text, number, 
 2. Run composer install and npm install.
 3. Run php artisan migrate.
 4. Run php artisan db:seed to insert the two role definitions.
-5. Run php artisan razzanstore:admin:create to create the first Super Admin interactively.
+5. Run php artisan razzanstore:admin:create --role=super_admin to create the first Super Admin; use --role=admin for additional Admin accounts.
 6. Run npm run build and composer test.
 
 No default Super Admin credential is seeded. Do not use production credentials in tests.
