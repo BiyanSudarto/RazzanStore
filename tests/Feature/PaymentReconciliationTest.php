@@ -6,10 +6,10 @@ use App\Models\Game;
 use App\Models\Order;
 use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
-use App\Models\PaymentReconciliationLog;
 use App\Services\PaymentReconciliationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PaymentReconciliationTest extends TestCase
@@ -134,7 +134,7 @@ class PaymentReconciliationTest extends TestCase
         $paid = $this->createAttempt($order, 'paid', 1);
         $pending = $this->createAttempt($order, 'pending', 2);
         $order->outboxEvents()->create([
-            'event_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'event_uuid' => (string) Str::uuid(),
             'event_type' => 'order.paid',
             'payload' => ['order_id' => $order->id],
             'status' => 'pending',
