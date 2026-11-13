@@ -307,7 +307,7 @@ class OrderPaymentService
                 'gross_amount' => $attempt->amount,
             ],
             'item_details' => [[
-                'id' => $order->product_sku_snapshot,
+                'id' => mb_substr($order->product_sku_snapshot, 0, 50),
                 'price' => $attempt->amount,
                 'quantity' => 1,
                 'name' => mb_substr($order->product_name_snapshot, 0, 50),
