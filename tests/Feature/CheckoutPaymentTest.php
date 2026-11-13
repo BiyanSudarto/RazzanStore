@@ -216,6 +216,7 @@ class CheckoutPaymentTest extends TestCase
             ->assertJsonMissingPath('data.tracking_token_hash')
             ->assertJsonMissingPath('data.payment_attempt.snap_token');
     }
+
     public function test_retry_creates_a_new_payment_attempt_only_after_definitive_failure(): void
     {
         $product = $this->createProduct();
@@ -258,6 +259,5 @@ class CheckoutPaymentTest extends TestCase
         $this->assertSame('pending', Order::firstOrFail()->payment_status);
         Http::assertSentCount(2);
     }
-
 
 }
