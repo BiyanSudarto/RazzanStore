@@ -4,7 +4,7 @@ namespace Tests\Unit;
 
 use App\Services\MidtransAmount;
 use App\Services\MidtransSignatureVerifier;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class MidtransSecurityTest extends TestCase
 {
