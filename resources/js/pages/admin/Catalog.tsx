@@ -108,16 +108,17 @@ export default function AdminCatalog({ adminRole }: Props) {
         setErrorMessage('');
         try {
             const [gameResponse, productResponse] = await Promise.all([
-                request<{ data: Game[] }>('/admin/api/games?per_page=100'),
-                request<{ data: Product[] }>('/admin/api/products?per_page=100'),
+                request<{ data: { data: Game[] } }>('/admin/api/games?per_page=100'),
+                request<{ data: { data: Product[] } }>('/admin/api/products?per_page=100'),
             ]);
 
-            setGames(gameResponse.data);
-            setProducts(productResponse.data);
-            setSelectedGame((current) => current || String(gameResponse.data[0]?.id ?? ''));
+            const gameRows = gameResponse.data.data;
+            setGames(gameRows);
+            setProducts(productResponse.data.data);
+            setSelectedGame((current) => current || String(gameRows[0]?.id ?? ''));
             setProductForm((current) => ({
                 ...current,
-                game_id: current.game_id || String(gameResponse.data[0]?.id ?? ''),
+                game_id: current.game_id || String(gameRows[0]?.id ?? ''),
             }));
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Gagal memuat katalog.');
