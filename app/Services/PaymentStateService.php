@@ -249,7 +249,6 @@ class PaymentStateService
         return 'processed';
     }
 
-
     private function preservePaidAggregate(Order $order): void
     {
         $hasPaidAttempt = PaymentAttempt::query()
