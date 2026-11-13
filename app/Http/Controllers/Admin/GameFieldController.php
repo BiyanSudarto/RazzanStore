@@ -8,6 +8,7 @@ use App\Models\GameField;
 use App\Services\AdminAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -16,8 +17,13 @@ class GameFieldController extends Controller
     public function store(Request $request, Game $game, AdminAuditLogger $audit): JsonResponse
     {
         $data = $this->validated($request, $game);
-        $field = $game->fields()->create($data);
-        $audit->record('game_field.created', $field, null, $field->toArray());
+
+        $field = DB::transaction(function () use ($game, $data, $audit): GameField {
+            $field = $game->fields()->create($data);
+            $audit->record('game_field.created', $field, null, $field->toArray());
+
+            return $field;
+        });
 
         return response()->json(['data' => $field], 201);
     }
@@ -27,20 +33,33 @@ class GameFieldController extends Controller
         abort_unless($field->game_id === $game->id, 404);
 
         $data = $this->validated($request, $game, $field);
-        $before = $field->only(array_keys($data));
-        $field->fill($data)->save();
-        $field->refresh();
-        $audit->record('game_field.updated', $field, $before, $field->only(array_keys($data)));
+        $updated = DB::transaction(function () use ($game, $field, $data, $audit): GameField {
+            $locked = GameField::query()->lockForUpdate()->findOrFail($field->id);
+            abort_unless($locked->game_id === $game->id, 404);
 
-        return response()->json(['data' => $field]);
+            $before = $locked->only(array_keys($data));
+            $locked->fill($data)->save();
+            $locked->refresh();
+            $audit->record('game_field.updated', $locked, $before, $locked->only(array_keys($data)));
+
+            return $locked;
+        }, 3);
+
+        return response()->json(['data' => $updated]);
     }
 
     public function destroy(Game $game, GameField $field, AdminAuditLogger $audit): JsonResponse
     {
         abort_unless($field->game_id === $game->id, 404);
-        $before = $field->toArray();
-        $audit->record('game_field.deleted', $field, $before, null);
-        $field->delete();
+
+        DB::transaction(function () use ($game, $field, $audit): void {
+            $locked = GameField::query()->lockForUpdate()->findOrFail($field->id);
+            abort_unless($locked->game_id === $game->id, 404);
+
+            $before = $locked->toArray();
+            $audit->record('game_field.deleted', $locked, $before, null);
+            $locked->delete();
+        }, 3);
 
         return response()->json(['message' => 'Field berhasil dihapus.']);
     }
