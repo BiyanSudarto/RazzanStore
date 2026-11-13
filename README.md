@@ -29,10 +29,10 @@ Persyaratan: PHP 8.3+, Composer 2, Node.js 22+, npm, ekstensi PHP Laravel, MySQL
     npm install
     php artisan migrate
     php artisan db:seed
-    php artisan razzanstore:admin:create
+    php artisan razzanstore:admin:create --role=super_admin
     npm run dev
 
-Perintah admin bootstrap meminta nama, email, password secara interaktif; password tidak dicatat dalam repository. Sesuaikan koneksi MySQL/Redis di .env.
+Perintah admin bootstrap meminta nama, email, password secara interaktif; gunakan --role=admin untuk akun Admin. Password tidak dicatat dalam repository dan di-hash dengan Argon2id. Sesuaikan koneksi MySQL/Redis di .env.
 
 ## Pemeriksaan kualitas
 
