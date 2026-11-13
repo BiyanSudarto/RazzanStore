@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Services\AdminAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class GameController extends Controller
@@ -33,8 +34,15 @@ class GameController extends Controller
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
         ]);
 
-        $game = Game::create($data);
-        $audit->record('game.created', $game, null, $game->only(['slug', 'name', 'is_active', 'sort_order']));
+        $game = DB::transaction(function () use ($data, $audit): Game {
+            $game = Game::create($data);
+
+            $audit->record('game.created', $game, null, $game->only([
+                'slug', 'name', 'is_active', 'sort_order',
+            ]));
+
+            return $game;
+        });
 
         return response()->json(['data' => $game], 201);
     }
@@ -55,25 +63,41 @@ class GameController extends Controller
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
         ]);
 
-        $before = $game->only(array_keys($data));
-        $game->fill($data)->save();
-        $game->refresh();
-        $audit->record('game.updated', $game, $before, $game->only(array_keys($data)));
+        $updated = DB::transaction(function () use ($game, $data, $audit): Game {
+            $locked = Game::query()->lockForUpdate()->findOrFail($game->id);
+            $before = $locked->only(array_keys($data));
+            $locked->fill($data)->save();
+            $locked->refresh();
 
-        return response()->json(['data' => $game]);
+            $audit->record('game.updated', $locked, $before, $locked->only(array_keys($data)));
+
+            return $locked;
+        }, 3);
+
+        return response()->json(['data' => $updated]);
     }
 
     public function destroy(Game $game, AdminAuditLogger $audit): JsonResponse
     {
-        if ($game->products()->exists()) {
+        $deleted = DB::transaction(function () use ($game, $audit): bool {
+            $locked = Game::query()->lockForUpdate()->findOrFail($game->id);
+
+            if ($locked->products()->exists()) {
+                return false;
+            }
+
+            $before = $locked->only(['slug', 'name', 'is_active']);
+            $audit->record('game.deleted', $locked, $before, null);
+            $locked->delete();
+
+            return true;
+        }, 3);
+
+        if (! $deleted) {
             return response()->json([
                 'message' => 'Game yang sudah memiliki produk tidak dapat dihapus. Nonaktifkan game sebagai gantinya.',
             ], 409);
         }
-
-        $before = $game->only(['slug', 'name', 'is_active']);
-        $audit->record('game.deleted', $game, $before, null);
-        $game->delete();
 
         return response()->json(['message' => 'Game berhasil dihapus.']);
     }
