@@ -12,9 +12,7 @@ use Illuminate\Support\Str;
 
 class PaymentStateService
 {
-    public function __construct(private readonly MidtransAmount $amounts)
-    {
-    }
+    public function __construct(private readonly MidtransAmount $amounts) {}
 
     public function handleNotification(array $payload, string $rawBody): string
     {
@@ -52,7 +50,7 @@ class PaymentStateService
                     'received_at' => now(),
                 ]);
 
-                if (!$attempt) {
+                if (! $attempt) {
                     $event->update([
                         'processing_status' => 'unmatched',
                         'processed_at' => now(),
