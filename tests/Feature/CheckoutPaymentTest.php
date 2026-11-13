@@ -259,5 +259,4 @@ class CheckoutPaymentTest extends TestCase
         $this->assertSame('pending', Order::firstOrFail()->payment_status);
         Http::assertSentCount(2);
     }
-
 }
