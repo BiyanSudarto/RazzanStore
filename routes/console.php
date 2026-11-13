@@ -27,7 +27,7 @@ Artisan::command('razzanstore:admin:create', function (): int {
             $this->error($error);
         }
 
-        return self::FAILURE;
+        return 1;
     }
 
     $password = (string) $this->secret('Password (minimal 12 karakter)');
@@ -36,7 +36,7 @@ Artisan::command('razzanstore:admin:create', function (): int {
     if (strlen($password) < 12 || strlen($password) > 128 || ! hash_equals($password, $confirmation)) {
         $this->error('Password harus 12–128 karakter dan konfirmasi harus sama.');
 
-        return self::FAILURE;
+        return 1;
     }
 
     DB::transaction(function () use ($name, $email, $password): void {
@@ -56,5 +56,5 @@ Artisan::command('razzanstore:admin:create', function (): int {
 
     $this->info('Super Admin berhasil dibuat. Kredensial tidak ditampilkan kembali.');
 
-    return self::SUCCESS;
+    return 0;
 })->purpose('Create the first Super Admin interactively; never seeds a default password');
