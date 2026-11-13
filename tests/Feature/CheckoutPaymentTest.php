@@ -259,6 +259,7 @@ class CheckoutPaymentTest extends TestCase
         $this->assertSame('pending', Order::firstOrFail()->payment_status);
         Http::assertSentCount(2);
     }
+
     public function test_expired_idempotency_key_can_start_a_new_checkout_after_retention_window(): void
     {
         $product = $this->createProduct();
