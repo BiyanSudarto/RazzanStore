@@ -33,7 +33,7 @@ All operational tables use InnoDB-compatible foreign keys and indexes. Transacti
 - razzanstore:admin:create interactively creates the first Super Admin after migrations.
 - admin.role middleware enforces active status and role allowlists.
 - Game and game-field catalog management is available to both administrator roles.
-- Product creation and price changes are restricted to Super Admin. Admin can update non-price product metadata and deactivate products.
+- Product creation, price changes, provider SKU mapping, and internal product metadata are restricted to Super Admin. Admin can update customer-facing product fields and deactivate products.
 - Administrator mutations are written to audit logs; password/token/secret-like keys are redacted. Price history and supplier cost/provider metadata are available only to Super Admin. Admin responses hide base cost, provider SKU, and internal metadata.
 
 ## Catalog interfaces
@@ -55,7 +55,7 @@ Administrator routes are session-authenticated web routes under /admin/api and r
 
 Admin UI:
 - GET /admin/catalog renders the responsive catalog management screen.
-- The screen supports game creation, dynamic Player ID/server fields, product listing, product creation for Super Admin, Super Admin-only price changes, and product deactivation.
+- The screen supports game creation, dynamic Player ID/server fields, product listing, Super Admin-only product creation and price changes, provider SKU entry, and product deactivation.
 - Product listing/show hides supplier cost/provider metadata for Admin; the API applies the same restriction, not merely the UI.
 
 Public catalog never exposes base cost, provider SKU, or internal metadata.
