@@ -18,6 +18,4 @@ return [
     ),
     'connect_timeout' => (int) env('MIDTRANS_CONNECT_TIMEOUT', 5),
     'timeout' => (int) env('MIDTRANS_TIMEOUT', 15),
-    'tracking_token_key' => env('TRACKING_TOKEN_KEY'),
-    'tracking_token_ttl_days' => (int) env('TRACKING_TOKEN_TTL_DAYS', 90),
 ];
