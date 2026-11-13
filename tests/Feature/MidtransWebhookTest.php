@@ -6,7 +6,6 @@ use App\Models\Game;
 use App\Models\Order;
 use App\Models\OutboxEvent;
 use App\Models\PaymentAttempt;
-use App\Models\PaymentReconciliationLog;
 use App\Models\PaymentWebhookEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -182,7 +181,6 @@ class MidtransWebhookTest extends TestCase
         $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
     }
 
-
     public function test_second_successful_attempt_is_flagged_without_duplicate_outbox(): void
     {
         $first = $this->makeAttempt();
@@ -246,5 +244,4 @@ class MidtransWebhookTest extends TestCase
         $this->assertSame('paid', $attempt->order->fresh()->payment_status);
         $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
     }
-
 }
