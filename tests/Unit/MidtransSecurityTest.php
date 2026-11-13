@@ -27,7 +27,7 @@ class MidtransSecurityTest extends TestCase
 
     public function test_midtrans_idr_amount_parser_rejects_fractional_rupiah_and_invalid_strings(): void
     {
-        $amounts = new MidtransAmount();
+        $amounts = new MidtransAmount;
 
         self::assertSame(15000, $amounts->toIntegerIdr('15000.00'));
         self::assertSame(15000, $amounts->toIntegerIdr('15000'));
