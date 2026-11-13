@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use App\Models\Game;
 use App\Models\Order;
 use App\Models\OutboxEvent;
-use App\Models\PaymentAttempt;
+use App\\Models\\PaymentAttempt;
+use App\\Models\\PaymentWebhookEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -117,7 +118,7 @@ class MidtransWebhookTest extends TestCase
 
         $this->assertSame('pending', $attempt->fresh()->status);
         $this->assertSame('pending', $attempt->order->fresh()->payment_status);
-        $this->assertSame('rejected_amount_or_currency', \App\Models\PaymentWebhookEvent::firstOrFail()->processing_status);
+        $this->assertSame('rejected_amount_or_currency', PaymentWebhookEvent::firstOrFail()->processing_status);
     }
 
     public function test_duplicate_notification_is_acknowledged_without_duplicate_outbox(): void
@@ -131,7 +132,7 @@ class MidtransWebhookTest extends TestCase
             ->assertJsonPath('status', 'duplicate');
 
         $this->assertSame(1, OutboxEvent::where('event_type', 'order.paid')->count());
-        $this->assertSame(1, \App\Models\PaymentWebhookEvent::count());
+        $this->assertSame(1, PaymentWebhookEvent::count());
     }
 
     public function test_stale_pending_notification_cannot_regress_paid_order(): void
