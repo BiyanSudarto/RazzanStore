@@ -99,7 +99,7 @@ class OrderPaymentService
                     'payment_status' => 'pending',
                     'fulfillment_status' => 'not_started',
                     'tracking_token_hash' => $this->trackingTokens->hash(
-                        $this->trackingTokens->issueFor((object) ['public_order_code' => $publicCode]),
+                        $this->trackingTokens->issueFor($publicCode),
                     ),
                     'expires_at' => now()->addMinutes((int) config('orders.business_expiry_minutes', 60)),
                 ]);
