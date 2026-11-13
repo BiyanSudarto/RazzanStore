@@ -259,4 +259,44 @@ class CheckoutPaymentTest extends TestCase
         $this->assertSame('pending', Order::firstOrFail()->payment_status);
         Http::assertSentCount(2);
     }
+    public function test_expired_idempotency_key_can_start_a_new_checkout_after_retention_window(): void
+    {
+        $product = $this->createProduct();
+        $sequence = Http::sequence()
+            ->push([
+                'token' => 'snap-token-first-123',
+                'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/first',
+            ], 201)
+            ->push([
+                'token' => 'snap-token-second-456',
+                'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/second',
+            ], 201);
+
+        Http::fake([
+            'https://app.sandbox.midtrans.com/snap/v1/transactions' => $sequence,
+        ]);
+
+        $key = str_repeat('j', 32);
+        $input = [
+            'product_id' => $product->id,
+            'player_data' => ['player_id' => '12345678', 'server' => '1234'],
+        ];
+
+        $first = $this->withHeader('Idempotency-Key', $key)
+            ->postJson('/api/v1/checkout', $input);
+        $first->assertCreated();
+
+        $this->travel(31)->days();
+
+        $second = $this->withHeader('Idempotency-Key', $key)
+            ->postJson('/api/v1/checkout', $input);
+        $second->assertCreated();
+
+        $this->assertNotSame($first->json('data.order_code'), $second->json('data.order_code'));
+        $this->assertSame(2, Order::count());
+        $this->assertSame(2, PaymentAttempt::count());
+        $this->assertSame(1, IdempotencyRecord::count());
+        Http::assertSentCount(2);
+    }
+
 }
