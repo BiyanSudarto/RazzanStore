@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\Game;
 use App\Models\GameField;
-use App\Models\PriceHistory;
 use App\Models\Product;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
