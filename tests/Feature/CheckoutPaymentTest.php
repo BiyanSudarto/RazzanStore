@@ -160,7 +160,7 @@ class CheckoutPaymentTest extends TestCase
             ->postJson('/api/v1/checkout', [
                 'product_id' => $product->id,
                 'player_data' => [
-                    'player_id' => '1',
+                    'player_id' => '12345',
                     'server' => 'not-a-number',
                 ],
             ])
