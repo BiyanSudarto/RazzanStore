@@ -41,7 +41,7 @@ export default function AdminDashboard({ metrics }: Props) {
                             <p className="text-sm text-stone-500">Ringkasan operasional</p>
                             <h1 className="mt-2 text-3xl font-semibold tracking-tight">Dashboard</h1>
                         </div>
-                        <Link href="/" className="text-sm text-amber-400 hover:text-amber-300">Lihat storefront →</Link>
+                        <div className="flex gap-3"><Link href="/admin/catalog" className="text-sm text-amber-400 hover:text-amber-300">Kelola katalog →</Link><Link href="/" className="text-sm text-stone-400 hover:text-stone-200">Lihat storefront</Link></div>
                     </div>
                     <div className="mt-8 grid gap-4 sm:grid-cols-3">
                         {cards.map((card) => (
