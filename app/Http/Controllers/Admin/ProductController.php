@@ -86,12 +86,17 @@ class ProductController extends Controller
             'metadata' => ['sometimes', 'nullable', 'array'],
         ]);
 
-        $before = $product->only(array_keys($data));
-        $product->fill($data)->save();
-        $product->refresh();
-        $audit->record('product.updated', $product, $before, $product->only(array_keys($data)));
+        $updated = DB::transaction(function () use ($product, $data, $audit): Product {
+            $locked = Product::query()->lockForUpdate()->findOrFail($product->id);
+            $before = $locked->only(array_keys($data));
+            $locked->fill($data)->save();
+            $locked->refresh();
+            $audit->record('product.updated', $locked, $before, $locked->only(array_keys($data)));
 
-        return response()->json(['data' => $product]);
+            return $locked;
+        }, 3);
+
+        return response()->json(['data' => $updated]);
     }
 
     public function changePrice(Request $request, Product $product, AdminAuditLogger $audit): JsonResponse
@@ -138,10 +143,15 @@ class ProductController extends Controller
 
     public function deactivate(Product $product, AdminAuditLogger $audit): JsonResponse
     {
-        $before = $product->only(['is_active']);
-        $product->update(['is_active' => false]);
-        $audit->record('product.deactivated', $product, $before, ['is_active' => false]);
+        $updated = DB::transaction(function () use ($product, $audit): Product {
+            $locked = Product::query()->lockForUpdate()->findOrFail($product->id);
+            $before = $locked->only(['is_active']);
+            $locked->update(['is_active' => false]);
+            $audit->record('product.deactivated', $locked, $before, ['is_active' => false]);
 
-        return response()->json(['data' => $product->refresh()]);
+            return $locked->refresh();
+        }, 3);
+
+        return response()->json(['data' => $updated]);
     }
 }
