@@ -49,7 +49,15 @@ class GameController extends Controller
 
     public function show(Game $game): JsonResponse
     {
-        return response()->json(['data' => $game->load(['fields', 'products'])]);
+        $game->load(['fields', 'products']);
+
+        if (! auth('admin')->user()?->hasRole('super_admin')) {
+            $game->setRelation('products', $game->products->each(
+                fn ($product) => $product->makeHidden(['base_cost', 'provider_sku', 'metadata']),
+            ));
+        }
+
+        return response()->json(['data' => $game]);
     }
 
     public function update(Request $request, Game $game, AdminAuditLogger $audit): JsonResponse
