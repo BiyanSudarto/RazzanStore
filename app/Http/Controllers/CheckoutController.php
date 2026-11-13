@@ -19,7 +19,7 @@ class CheckoutController extends Controller
         $input = $request->validate([
             'product_id' => ['required', 'integer', 'min:1'],
             'player_data' => ['required', 'array', 'max:20'],
-            'customer_contact' => ['nullable', 'string', 'min:6', 'max:80'],
+            'customer_contact' => ['nullable', 'string', 'regex:/^\\+?[0-9]{8,15}$/'],
         ]);
 
         $result = $payments->checkout($input, $key);
