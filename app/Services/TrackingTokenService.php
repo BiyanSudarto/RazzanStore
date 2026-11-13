@@ -7,15 +7,16 @@ use RuntimeException;
 
 class TrackingTokenService
 {
-    public function issueFor(Order $order): string
+    public function issueFor(Order|string $order): string
     {
+        $publicOrderCode = $order instanceof Order ? $order->public_order_code : $order;
         $key = (string) config('orders.tracking_token_key');
 
         if (strlen($key) < 32) {
             throw new RuntimeException('TRACKING_TOKEN_KEY must contain at least 32 characters.');
         }
 
-        $digest = hash_hmac('sha256', $order->public_order_code, $key, true);
+        $digest = hash_hmac('sha256', $publicOrderCode, $key, true);
 
         return rtrim(strtr(base64_encode($digest), '+/', '-_'), '=');
     }
