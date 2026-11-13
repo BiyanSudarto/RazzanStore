@@ -23,6 +23,12 @@ class ProductController extends Controller
             ->orderBy('sort_order')
             ->paginate(min(max($request->integer('per_page', 25), 1), 100));
 
+        if (! auth('admin')->user()?->hasRole('super_admin')) {
+            $products->through(fn (Product $product) => $product->makeHidden([
+                'base_cost', 'provider_sku', 'metadata',
+            ]));
+        }
+
         return response()->json(['data' => $products]);
     }
 
@@ -68,9 +74,15 @@ class ProductController extends Controller
 
     public function show(Product $product): JsonResponse
     {
-        return response()->json([
-            'data' => $product->load('game:id,slug,name', 'priceHistories.changedBy:id,name,email'),
-        ]);
+        $product->load('game:id,slug,name');
+
+        if (auth('admin')->user()?->hasRole('super_admin')) {
+            $product->load('priceHistories.changedBy:id,name,email');
+        } else {
+            $product->makeHidden(['base_cost', 'provider_sku', 'metadata']);
+        }
+
+        return response()->json(['data' => $product]);
     }
 
     public function update(Request $request, Product $product, AdminAuditLogger $audit): JsonResponse
