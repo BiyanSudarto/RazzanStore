@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Game;
-use App\\Models\\GameField;
-use App\\Models\\IdempotencyRecord;
+use App\Models\GameField;
+use App\Models\IdempotencyRecord;
 use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
